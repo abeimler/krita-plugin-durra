@@ -350,7 +350,7 @@ I love Kritas editing time feature :)
  * [ ] preview new Version `0.1.0 -> 1.0.0`, `1.0.0 -> 1.0.1` or `1.0.0 -> 1.1.0`
  * [ ] select to generate files
  * [ ] add other versioning-software (SVN)
- * [ ] additional commit message
+ * [x] additional commit message
  * [x] init git/SNV in UI
 
 

@@ -23,7 +23,7 @@ except ImportError:  # script being run in testing environment without Krita
     EXTENSION = QWidget
 
 #TESTING = True
-TESTING = False
+#TESTING = False
 
 
 class DURRABackendExt(EXTENSION):
@@ -33,6 +33,8 @@ class DURRABackendExt(EXTENSION):
         super().__init__(parent)
 
     def setup(self):
+        self.output = ""
+
         # do setup stuff
         self.script_abs_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -42,6 +44,15 @@ class DURRABackendExt(EXTENSION):
             pykrita_directory = os.path.join(pykrita_directory, "krita")
         pykrita_directory = os.path.join(pykrita_directory, "pykrita")
         self.pykrita_directory = pykrita_directory
+
+    def print(self, str):
+        if str is not None:
+            self.output = self.output + str
+
+    def println(self, str):
+        if str is not None:
+            self.output = self.output + str + '\n'
+
 
     def formatPlural(self, format1, format2, value):
         if value == 1:
@@ -132,7 +143,7 @@ class DURRABackendExt(EXTENSION):
         return filename
 
     def genKeywordFile(self, workdir, keyword):
-        filename = os.path.normpath(workdir) + '/KEYWORD'
+        filename = os.path.normpath(workdir) + '/KEYWORDS'
         file = open(filename, "w+")
         file.write(keyword)
         file.close()
@@ -209,10 +220,10 @@ class DURRABackendExt(EXTENSION):
         file.write("\n")
         file.write("\n")
 
-        file.write("Date: " + dt.strftime("%d.%m.%Y") + "\n")
-        file.write("Duration: " + dura + "\n")
-        file.write("\n")
-        file.write("Keywords: " + ' '.join(keywords) + "\n")
+        file.write("Date: " + dt.strftime("%d.%m.%Y") + "  \n")
+        file.write("Duration: " + dura + "  \n")
+        file.write("  \n")
+        file.write("Keywords: " + ' '.join(keywords) + "  \n")
 
         file.close()
         return filename
@@ -226,7 +237,7 @@ class DURRABackendExt(EXTENSION):
 
         file = open(filename, "w+")
 
-        file.write(license + "\n")
+        file.write(license + "  \n")
         file.write("Art by " + authorname + authoremail_output + "\n")
 
         file.close()
@@ -272,37 +283,63 @@ class DURRABackendExt(EXTENSION):
 
         return filename
 
-    def genFiles(self, workdir, document, filename,
-                 name, title, subject, description, keyword, revision, license, editingtimestr, datestr, authorname, authoremail,
-                 newversion=None, releaseversion=False, onlymetafiles=False):
-        if filename is None or filename == "":
-            return 'filename is empty'
+    def genMetaFiles(self, workdir, document, filename,
+                name, title, subject, description, keyword, revision, license, 
+                editingtimestr, datestr, authorname, authoremail,
+                newversion=None):
 
         filenameTitle = self.genTitleFile(workdir, title)
         filenameDescription = self.genDescriptionFile(workdir, description)
         filenameKeyword = self.genKeywordFile(workdir, keyword)
-        filenameReadme = self.genReadmeFile(
-            workdir, title, subject, description, datestr, editingtimestr, keyword)
+        filenameReadme = self.genReadmeFile(workdir, title, subject, description, datestr, editingtimestr, keyword)
         filenameLicense = self.genLicenseFile(workdir, authorname, authoremail, license)
         filenameVersion = self.genVersionFile(workdir, revision, newversion)
 
         files = [filenameTitle, filenameDescription, filenameKeyword,
                  filenameReadme, filenameLicense, filenameVersion]
 
-        if not onlymetafiles:
-            filenamePreview = self.exportPreview(workdir, document)
-            files.append(filename)
-            files.append(filenamePreview)
+        return files
 
-            if releaseversion:
-                filename_name = name
-                if newversion is not None:
-                    version = self.ver_str(newversion)
-                    filename_name = name + '_v' + version
+    def makeMetaFiles(self, workdir, document, filename,
+                name, title, subject, description, keyword, revision, license, editingtimestr, datestr, authorname, authoremail,
+                newversion=None):
+        
+        if filename is None or filename == "":
+            self.print('filename is empty')
+            return []
 
-                filenameImage = self.exportImage(
-                    workdir, document, filename_name)
-                files.append(filenameImage)
+        files = self.genMetaFiles(workdir, document, filename,
+                    name, title, subject, description, keyword, revision, license, 
+                    editingtimestr, datestr, authorname, authoremail,
+                    newversion)
+
+        return files
+
+    def makeFiles(self, workdir, document, filename,
+                 name, title, subject, description, keyword, revision, license, editingtimestr, datestr, authorname, authoremail,
+                 newversion=None, releaseversion=False):
+        
+        if filename is None or filename == "":
+            self.println('filename is empty')
+            return []
+
+        files = self.genMetaFiles(workdir, document, filename,
+                        name, title, subject, description, keyword, revision, license, 
+                        editingtimestr, datestr, authorname, authoremail,
+                        newversion)
+
+        filenamePreview = self.exportPreview(workdir, document)
+        files.append(filename)
+        files.append(filenamePreview)
+
+        if releaseversion:
+            filename_name = name
+            if newversion is not None:
+                version = self.ver_str(newversion)
+                filename_name = name + '_v' + version
+
+            filenameImage = self.exportImage(workdir, document, filename_name)
+            files.append(filenameImage)
 
         return files
 
@@ -319,7 +356,7 @@ class DURRABackendExt(EXTENSION):
 
         if doc is not None:
             docInfo = doc.documentInfo()
-            # print(docInfo)
+            #self.print(docInfo)
 
             docInfoXml = QDomDocument()
             docInfoXml.setContent(docInfo)
@@ -352,6 +389,22 @@ class DURRABackendExt(EXTENSION):
                         "full-name").text()
                     authoremail = authorXml.firstChildElement(
                         "email").text()
+                    
+                    if authoremail is None or authoremail == "":
+                        authorContacts = authorXml.toElement().elementsByTagName("contact")
+                        if not authorContacts.isEmpty():
+                            for i in range(authorContacts.count()):
+                                authorContact = authorContacts.at(i)
+                                if authorContact.hasAttributes():
+                                    authorContactAttributes = authorContact.attributes()
+                                    for j in range(authorContactAttributes.count()):
+                                        authorContactAttributeItem = authorContactAttributes.item(j)
+                                        authorContactAttribute = authorContactAttributeItem.toAttr()
+                                        authorContactAttributeName = authorContactAttribute.name()
+                                        authorContactAttributeValue = authorContactAttribute.value()
+                                        if authorContactAttributeName == "type" and authorContactAttributeValue == "email":
+                                            authoremail = authorContact.toElement().text()
+
 
         return {
             "title": title,
@@ -405,11 +458,11 @@ class DURRABackendExt(EXTENSION):
 
                 output = output + '$ ' + cmd + "\n"
                 output = output + out.decode('UTF-8')
-                # print(err)
+                self.print(err)
 
         cmd = 'git commit -m ' + "'" + msg.replace("'", "'\\''") + "'"
-        if description != "":
-            cmd = cmd + ' -m ' + "'" + description.replace("'", "'\\''") + "'"
+        if description != None and description != "":
+            cmd = cmd + ' -m ' + "'" + description.replace("'", "'\\''").replace("\n", "\\n") + "'"
         
         if authorname != "":
             authorargstr = authorname.replace("'", "'\\''") 
@@ -425,11 +478,29 @@ class DURRABackendExt(EXTENSION):
 
         output = output + '$ ' + cmd + "\n"
         output = output + out.decode('UTF-8')
-        # print(err)
+        
+        self.println(err)
 
         return output
 
-    def commitDocument(self, doc, newversion=None, commit=True, releaseversion=False, onlymetafiles=False):
+
+
+    def generateDocumentMetaFiles(self, doc, newversion=None):
+        files = self._generateDocumentFiles(doc, newversion, False, True)
+        output = "generate Files: " + "\n - ".join(str(x) for x in files) + "\n\n"
+        return output
+
+    def generateDocument(self, doc, newversion=None):
+        files = self._generateDocumentFiles(doc, newversion, False, False)
+        output = "generate Files: " + "\n - ".join(str(x) for x in files) + "\n\n"
+        return output
+
+    def generateDocumentRelease(self, doc, newversion=None):
+        files = self._generateDocumentFiles(doc, newversion, True, False)
+        output = "generate Files: " + "\n - ".join(str(x) for x in files) + "\n\n"
+        return output
+
+    def _generateDocumentFiles(self, doc, newversion=None, releaseversion=False, onlymetafiles=False):
         if doc is not None:
             filename = doc.fileName()
 
@@ -448,49 +519,94 @@ class DURRABackendExt(EXTENSION):
                 filename = doc.fileName()
 
                 workdir = self.getWorkdir(doc)
+
+                files = []
+                if onlymetafiles:
+                    files = self.makeMetaFiles(workdir, doc, filename, name,
+                                        info["title"],
+                                        info["subject"],
+                                        info["description"],
+                                        info["keyword"],
+                                        info["revisionstr"],
+                                        info["license"],
+                                        info["editingtimestr"],
+                                        info["datestr"],
+                                        info["authorname"],
+                                        info["authoremail"],
+                                        newversion)
+                else:
+                    files = self.makeFiles(workdir, doc, filename, name,
+                                        info["title"],
+                                        info["subject"],
+                                        info["description"],
+                                        info["keyword"],
+                                        info["revisionstr"],
+                                        info["license"],
+                                        info["editingtimestr"],
+                                        info["datestr"],
+                                        info["authorname"],
+                                        info["authoremail"],
+                                        newversion, releaseversion)
+
+                return files
+            else:
+                self.println('filename is empty')
+        else:
+            self.println('document is not set')
+
+        return []
+
+
+
+    def commitDocument(self, doc, newversion=None, extramsg=None):
+        return self._commitDocument(doc, newversion, False, False, extramsg)
+
+    def commitDocumentMetafiles(self, doc, newversion=None, extramsg=None):
+        return self._commitDocument(doc, newversion, False, True, extramsg)
+
+    def commitDocumentRelease(self, doc, newversion=None, extramsg=None):
+        return self._commitDocument(doc, newversion, True, False, extramsg)
+    
+    def _commitDocument(self, doc, newversion=None, releaseversion=False, onlymetafiles=False, extramsg=None):
+        if doc is not None:
+            filename = doc.fileName()
+
+            if filename != "":
+                files = self._generateDocumentFiles(doc, newversion, releaseversion, onlymetafiles)
+
+                info = self.getDocumentInfo(doc)
+                name = doc.name()
+                filename = doc.fileName()
+
+                workdir = self.getWorkdir(doc)
                 workdir_basename = os.path.basename(os.path.normpath(workdir))
+
+                outputfiles = "generate Files: " + "\n - ".join(str(x) for x in files) + "\n\n"
 
                 nr = ""
                 mnrs = re.search(r"^\s*(\d+)\s+\-\s+.*$", workdir_basename)
                 nr = mnrs.group(1) if mnrs is not None else ""
 
-                output = ''
+                msg = ""
+                nrstr = None
+                if nr is not None and nr != "":
+                    nrstr = """#""" + "{}".format(int(nr))
 
-                files = self.genFiles(workdir, doc, filename, name,
-                                      info["title"],
-                                      info["subject"],
-                                      info["description"],
-                                      info["keyword"],
-                                      info["revisionstr"],
-                                      info["license"],
-                                      info["editingtimestr"],
-                                      info["datestr"],
-                                      info["authorname"],
-                                      info["authoremail"],
-                                      newversion, releaseversion, onlymetafiles)
-
-                output = output + "generate Files: " + \
-                    "\n - ".join(str(x) for x in files) + "\n\n"
-
-                if commit:
-                    msg = ""
-                    nrstr = None
-                    if nr is not None and nr != "":
-                        nrstr = """#""" + "{}".format(int(nr))
-                    if releaseversion and newversion is not None:
-                        version = self.ver_str(newversion)
-                        if version == "1.0.0":
-                            msg = "finished " + name + " v" + version + " Closes " + nrstr
-                        else:
-                            msg = "new version of " + name + " v" + version
+                if releaseversion and newversion is not None:
+                    version = self.ver_str(newversion)
+                    if version == "1.0.0":
+                        msg = "finished " + name + " v" + version + " Closes " + nrstr
                     else:
-                        msg = "work on "
-                        if nrstr is not None:
-                            msg = msg + nrstr + " "
-                        msg = msg + name
-                    output = output + self.runGit(workdir, files, msg, info["authorname"], info["authoremail"])
+                        msg = "new version of " + name + " v" + version
+                else:
+                    msg = "work on "
+                    if nrstr is not None:
+                        msg = msg + nrstr + " "
+                    msg = msg + name
 
-                return output
+                output = self.runGit(workdir, files, msg, extramsg, info["authorname"], info["authoremail"])
+
+                return outputfiles + output
             else:
                 return 'filename is empty'
         else:
@@ -502,25 +618,11 @@ class DURRABackendExt(EXTENSION):
 
         return self.newPatchRevisionVersion(versionarr, int(docinfo['revisionstr']))
 
-    def commitDocumentCurrentVersion(self, doc, commit=True, onlymetafiles=False):
-        if doc is not None:
-            versionarr = self.getVersionArrCurrentVersion(doc)
-            return self.commitDocument(doc, versionarr, commit, False, onlymetafiles)
-        else:
-            return 'document is not set'
-
     def getVersionArrNewMinjorVersion(self, doc):
         versionarr = self.getVERSIONArrFromDoc(doc)
         #docinfo = self.getDocumentInfo(doc)
 
         return self.newMinjorVersion(versionarr)
-
-    def commitDocumentNewMinjorVersion(self, doc, commit=True):
-        if doc is not None:
-            versionarr = self.getVersionArrNewMinjorVersion(doc)
-            return self.commitDocument(doc, versionarr, commit, True)
-        else:
-            return 'document is not set'
 
     def getVersionArrNewMajorVersion(self, doc):
         versionarr = self.getVERSIONArrFromDoc(doc)
@@ -528,44 +630,90 @@ class DURRABackendExt(EXTENSION):
 
         return self.newMajorVersion(versionarr)
 
-    def commitDocumentNewMajorVersion(self, doc, commit=True):
-        if doc is not None:
-            versionarr = self.getVersionArrNewMajorVersion(doc)
-            return self.commitDocument(doc, versionarr, commit, True)
-        else:
-            return 'document is not set'
-
     def getVersionArrNewPatchedVersion(self, doc):
         versionarr = self.getVERSIONArrFromDoc(doc)
         #docinfo = self.getDocumentInfo(doc)
 
         return self.newPatchVersion(versionarr)
 
-    def commitDocumentNewPatchedVersion(self, doc, commit=True):
+
+
+
+    
+    def generateDocumentMetafilesCurrentVersion(self, doc):
         if doc is not None:
-            versionarr = self.getVersionArrNewPatchedVersion(doc)
-            return self.commitDocument(doc, versionarr, commit, True)
+            versionarr = self.getVersionArrCurrentVersion(doc)
+            return self.generateDocumentMetaFiles(doc, versionarr)
+        else:
+            return 'document is not set'
+    
+    def commitDocumentMetafilesCurrentVersion(self, doc, extramsg=None):
+        if doc is not None:
+            versionarr = self.getVersionArrCurrentVersion(doc)
+            return self.commitDocumentMetafiles(doc, versionarr, extramsg)
+        else:
+            return 'document is not set'
+
+    
+    def generateDocumentCurrentVersion(self, doc):
+        if doc is not None:
+            versionarr = self.getVersionArrCurrentVersion(doc)
+            return self.generateDocument(doc, versionarr)
+        else:
+            return 'document is not set'
+
+    def commitDocumentCurrentVersion(self, doc, extramsg=None):
+        if doc is not None:
+            versionarr = self.getVersionArrCurrentVersion(doc)
+            return self.commitDocument(doc, versionarr, extramsg)
         else:
             return 'document is not set'
 
 
-# if TESTING:
-#     app=Krita.instance()
-#     ext=DURRABackendExt(parent=app) #instantiate your class
-#     #app.addExtension(ext)
 
-#     ext.setup()
+    def generateDocumentNewMinjorVersion(self, doc):
+        if doc is not None:
+            versionarr = self.getVersionArrNewMinjorVersion(doc)
+            return self.generateDocumentRelease(doc, versionarr)
+        else:
+            return 'document is not set'
+
+    def commitDocumentNewMinjorVersion(self, doc, extramsg=None):
+        if doc is not None:
+            versionarr = self.getVersionArrNewMinjorVersion(doc)
+            return self.commitDocumentRelease(doc, versionarr, extramsg)
+        else:
+            return 'document is not set'
 
 
-#     # Get the document:
-#     doc =  Krita.instance().activeDocument()
 
-#     #doc.save()
+    def generateDocumentNewMajorVersion(self, doc):
+        if doc is not None:
+            versionarr = self.getVersionArrNewMajorVersion(doc)
+            return self.generateDocumentRelease(doc, versionarr)
+        else:
+            return 'document is not set'
 
-#     versionarr = ext.getVERSIONArrFromDoc(doc)
-#     docinfo = ext.getDocumentInfo(doc)
+    def commitDocumentNewMajorVersion(self, doc, extramsg=None):
+        if doc is not None:
+            versionarr = self.getVersionArrNewMajorVersion(doc)
+            return self.commitDocumentRelease(doc, versionarr, extramsg)
+        else:
+            return 'document is not set'
 
-#     print (ext.saveDocumentCurrentVersion(doc, False))
-#     print (ext.saveDocumentCurrentVersion(doc, True))
-#     print (ext.saveDocumentNewMinjorVersion(doc, True))
-#     print (ext.saveDocumentNewMajorVersion(doc, True))
+
+
+    def generateDocumentNewPatchedVersion(self, doc):
+        if doc is not None:
+            versionarr = self.getVersionArrNewPatchedVersion(doc)
+            return self.generateDocumentRelease(doc, versionarr)
+        else:
+            return 'document is not set'
+
+    def commitDocumentNewPatchedVersion(self, doc, commit=True, extramsg=None):
+        if doc is not None:
+            versionarr = self.getVersionArrNewPatchedVersion(doc)
+            return self.commitDocumentRelease(doc, versionarr, extramsg)
+        else:
+            return 'document is not set'
+

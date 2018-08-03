@@ -76,11 +76,11 @@ class DURRAExt(EXTENSION):
 
         # connect signals
         # self.ui.e_name_of_script.textChanged.connect(self.name_change)
-        self.ui.buttonBox.rejected.connect(self.cancel)
-        self.ui.btnSave.clicked.connect(self.save)
-        self.ui.btnGenFiles.clicked.connect(self.genFiles)
-        self.ui.btnCommit.clicked.connect(self.commitFiles)
-        self.ui.btnCommitMetaFiles.clicked.connect(self.commitMetaFiles)
+        self.ui.buttonBox.rejected.connect(self.btnCancel)
+        self.ui.btnSave.clicked.connect(self.btnSave)
+        self.ui.btnGenFiles.clicked.connect(self.btnGenFiles)
+        self.ui.btnCommit.clicked.connect(self.btnCommitFiles)
+        self.ui.btnCommitMetaFiles.clicked.connect(self.btnCommitMetaFiles)
         self.ui.btnNewMajorVersion.clicked.connect(self.btnNewMajorVersion)
         self.ui.btnNewMinjorVersion.clicked.connect(self.btnNewMinjorVersion)
         self.ui.btnNewPatchedVersion.clicked.connect(self.btnNewPatchedVersion)
@@ -108,8 +108,6 @@ class DURRAExt(EXTENSION):
         self.ui.show()
         self.ui.activateWindow()
 
-    def cancel(self):
-        self.ui.close()
 
     def initDocument(self, doc=None):
         self.document = doc
@@ -121,11 +119,16 @@ class DURRAExt(EXTENSION):
             filename = self.document.fileName()
             info = self.backend.getDocumentInfo(self.document)
             if filename != "":
-                self.versionarr = self.backend.getVERSIONArrFromDoc(
-                    self.document)
+                self.versionarr = self.backend.getVERSIONArrFromDoc(self.document)
             self.initUIDocumentInfo(filename, info, self.versionarr)
             self.enableButtons()
             self.ui.txtLog.clear()
+
+            if TESTING:
+                docInfo = self.document.documentInfo()
+                self.backend.output = self.backend.output + "\n\n" + docInfo
+                self.ui.txtLog.setPlainText(self.backend.output)
+            
         else:
             self.ui.lblFilename.setText('document not open')
             self.ui.txtTitle.clear()
@@ -144,8 +147,7 @@ class DURRAExt(EXTENSION):
         self.ui.lblFilename.setText(filename)
         if info:
             self.ui.txtTitle.setText(info['title'])
-            self.ui.lblEditingTime.setText(
-                self.backend.getDurationText(info['editingtimestr']))
+            self.ui.lblEditingTime.setText(self.backend.getDurationText(info['editingtimestr']))
             self.ui.txtAuthorFullname.setText(info['authorname'])
             self.ui.txtAuthorEmail.setText(info['authoremail'])
             self.ui.txtLicense.setText(info['license'])
@@ -154,7 +156,10 @@ class DURRAExt(EXTENSION):
             self.ui.lblVersion.setText(self.backend.ver_str(versionarr))
             self.ui.txtDescription.setText(info['description'])
 
-    def save(self):
+    def btnCancel(self):
+        self.ui.close()
+
+    def btnSave(self):
         self.ui.txtLog.clear()
         if self.document is not None:
             self.disableButtons()
@@ -172,56 +177,66 @@ class DURRAExt(EXTENSION):
             self.ui.txtLog.moveCursor(QtGui.QTextCursor.End)
             self.enableButtons()
 
-    def genFiles(self):
+    def btnGenFiles(self):
         self.ui.txtLog.clear()
         if self.document is not None:
             self.disableButtons()
-            # TODO refactoring the "... True, False, True) -"Params" into a Propertie-Object or something
-            output = self.backend.commitDocument(
-                self.document, None, False, False, True)
+
+            output = self.backend.generateDocumentCurrentVersion(self.document)
+
             self.initDocument(self.document)
             self.updateVersionArr()
-
-            self.ui.txtLog.setText(output)
+            
+            self.ui.txtLog.setPlainText(output)
             self.ui.txtLog.moveCursor(QtGui.QTextCursor.End)
             self.enableButtons()
 
-    def commitMetaFiles(self):
+    def btnCommitMetaFiles(self):
         self.ui.txtLog.clear()
         if self.document is not None:
             self.disableButtons()
-            output = self.backend.commitDocument(
-                self.document, None, True, False, True)
+
+            extramsg = self.ui.txtMessage.toPlainText()
+            output = self.backend.commitDocumentMetafilesCurrentVersion(self.document, extramsg)
+
             self.initDocument(self.document)
             self.updateVersionArr()
-
-            self.ui.txtLog.setText(output)
+            
+            self.ui.txtLog.setPlainText(output)
             self.ui.txtLog.moveCursor(QtGui.QTextCursor.End)
             self.enableButtons()
 
-    def commitFiles(self):
+
+    def btnCommitFiles(self):
         self.ui.txtLog.clear()
         if self.document is not None:
             self.disableButtons()
+
+            extramsg = self.ui.txtMessage.toPlainText()
             self.document.save()
-            output = self.backend.commitDocumentCurrentVersion(self.document)
+            output = self.backend.commitDocumentCurrentVersion(self.document, extramsg)
+
             self.initDocument(self.document)
             self.updateVersionArr()
-
-            self.ui.txtLog.setText(output)
+            
+            self.ui.txtLog.setPlainText(output)
             self.ui.txtLog.moveCursor(QtGui.QTextCursor.End)
             self.enableButtons()
+            
 
     def btnNewMajorVersion(self):
         self.ui.txtLog.clear()
         if self.document is not None:
             self.disableButtons()
+
+            extramsg = self.ui.txtMessage.toPlainText()
             self.document.save()
-            output = self.backend.commitDocumentNewMajorVersion(self.document)
+            output = self.backend.commitDocumentNewMajorVersion(self.document, extramsg)
+
             self.initDocument(self.document)
             self.updateVersionArr()
-
-            self.ui.txtLog.setText(output)
+            
+            self.ui.txtLog.setPlainText(output)
             self.ui.txtLog.moveCursor(QtGui.QTextCursor.End)
             self.enableButtons()
 
@@ -229,12 +244,15 @@ class DURRAExt(EXTENSION):
         self.ui.txtLog.clear()
         if self.document is not None:
             self.disableButtons()
+
+            extramsg = self.ui.txtMessage.toPlainText()
             self.document.save()
-            output = self.backend.commitDocumentNewMinjorVersion(self.document)
+            output = self.backend.commitDocumentNewMinjorVersion(self.document, extramsg)
+
             self.initDocument(self.document)
             self.updateVersionArr()
-
-            self.ui.txtLog.setText(output)
+            
+            self.ui.txtLog.setPlainText(output)
             self.ui.txtLog.moveCursor(QtGui.QTextCursor.End)
             self.enableButtons()
 
@@ -242,13 +260,15 @@ class DURRAExt(EXTENSION):
         self.ui.txtLog.clear()
         if self.document is not None:
             self.disableButtons()
+
+            extramsg = self.ui.txtMessage.toPlainText()
             self.document.save()
-            output = self.backend.commitDocumentNewPatchedVersion(
-                self.document)
+            output = self.backend.commitDocumentNewPatchedVersion(self.document, extramsg)
+
             self.initDocument(self.document)
             self.updateVersionArr()
-
-            self.ui.txtLog.setText(output)
+            
+            self.ui.txtLog.setPlainText(output)
             self.ui.txtLog.moveCursor(QtGui.QTextCursor.End)
             self.enableButtons()
 
@@ -267,10 +287,6 @@ class DURRAExt(EXTENSION):
             )
 
             if initgit_dir is not None and initgit_dir != "":
-
-                info = self.backend.getDocumentInfo(self.document)
-                authorname = info['authorname']
-                authoremail = info['authoremail']
                 
                 cmds = [
                     'git init ' + "'" + initgit_dir.replace("'", "'\\''") + "'",
@@ -297,7 +313,7 @@ class DURRAExt(EXTENSION):
                                                       stdout=subprocess.PIPE, shell=True).communicate()
                         
                         output = output + out.decode('UTF-8')
-                        #print(err)
+                        self.backend.println(err)
 
 
                     src_gitignore_file = os.path.join(self.script_abs_path, ".gitignore")
@@ -308,11 +324,31 @@ class DURRAExt(EXTENSION):
                     except IOError as e:
                         output = output + "Unable to copy file: {} {}".format(dest_gitignore_file, e)
 
+                    gitattributes_file = os.path.join(initgit_dir, ".gitattributes")
 
-                    self.ui.txtLog.setText(output)
+                    cmds = [
+                        'git add ' + dest_gitignore_file,
+                        'git add ' + gitattributes_file,
+                        'git commit -m "update gitignore and gitattributes"'
+                    ]
+
+                    for cmd in cmds:
+                        output = output + '$ ' + cmd + "\n"
+                        (out, err) = subprocess.Popen(cmd, cwd=initgit_dir,
+                                                      stdout=subprocess.PIPE, shell=True).communicate()
+                        
+                        output = output + out.decode('UTF-8')
+                        self.backend.println(err)
+                    
+                    self.ui.txtLog.setPlainText(output)
                     self.ui.txtLog.moveCursor(QtGui.QTextCursor.End)
                 else:
                     pass
+
+            if TESTING:
+                docInfo = self.document.documentInfo()
+                self.backend.output = self.backend.output + "\n\n" + docInfo
+                self.ui.txtLog.setToolTip(self.backend.output)
 
             self.enableButtons()
 
@@ -396,5 +432,4 @@ elif CONTEXT_KRITA:
     # And add the extension to Krita's list of extensions:
     app = Krita.instance()
     extension = DURRAExt(parent=app)  # instantiate your class
-    if not TESTING:
-        app.addExtension(extension)
+    app.addExtension(extension)
