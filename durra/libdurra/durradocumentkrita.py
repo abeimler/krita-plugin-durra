@@ -21,15 +21,26 @@ class DURRADocumentKrita(DURRADocument):
 
         self.revisionstr = ""
 
+    def hasKritaDocument(self):
+        return self._document is not None
+    
     def getKritaDocument(self):
-        return self.document
+        return self._document
 
     def getFilenameKra(self):
         return self._filename_kra
 
     def getFilenameBaseName(self):
         return self._filename_name
-    
+
+    def saveKritaDocument(self):
+        if self._document:
+            succ = self._document.save()
+            self.loadDocument(self._document)
+            return succ
+        
+        return False
+
     def exportPreview(self, workdir):
         if not self._document:
             return "";
@@ -42,7 +53,7 @@ class DURRADocumentKrita(DURRADocument):
         w = w if w >= 1 else 1
         h = h if h >= 1 else 1
 
-        img = self.document.thumbnail(w, h)
+        img = self._document.thumbnail(w, h)
         if img:
             img.save(filename)
 
@@ -87,21 +98,24 @@ class DURRADocumentKrita(DURRADocument):
         self.title = info['title']
         self.subject = info['subject']
         self.categories = [info['subject']]
-        self.description = info['info.description']
+        self.description = info['description']
         self.keywords = info['keyword'].split(';')
         self.license = info['license']
-        self.duration_sec = int(info['editingtimestr'])
+        self.duration_sec = int(info['editingtimestr'] if info['editingtimestr'] else 0)
         self.authorname = info['authorname']
         self.date = datetime.strptime(info['datestr'], "%Y-%m-%dT%H:%M:%S")
         self.authoremail = info['authoremail']
         self.revisionstr = info['revisionstr']
 
         newversionstr = "0." + self.revisionstr + ".0"
-        if self.ver_cmp(newversionstr, self.versionstr) > 0:
+        if self.ver_cmp(newversionstr, self.versionstr) < 0:
             self.versionstr = newversionstr
 
     def getDocumentInfo(self):
         return self.getDocumentInfoFromDocument(self._document)
+    
+    def getKritaDocumentInfo(self):
+        return self._document.documentInfo()
     
     @staticmethod
     def getDocumentInfoFromDocument(document):

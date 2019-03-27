@@ -22,7 +22,7 @@ if sys.platform == "win32":
 
 setup(
     name='durra',
-    version = '0.2.0',
+    version = '1.0.0',
     description="DURRA Krita Plugin - Developer Uses Revision contRoll for Art(-Projects)",
     long_description=(read('README.md')),
     license="MIT",

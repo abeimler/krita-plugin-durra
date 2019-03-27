@@ -20,17 +20,16 @@ except ImportError:  # script being run in testing environment without Krita
     CONTEXT_KRITA = False
     EXTENSION = QWidget
 
-from .durradocumentkrita import DURRADocumentKrita
+TESTING=True
 
-#TESTING = True
-#TESTING = False
+from .durradocumentkrita import DURRADocumentKrita
 
 
 class DURRABackendExt(EXTENSION):
     PREVIEW_SCALE = 0.5
 
     def __init__(self, parent):
-        super().__init__(parent)
+        super(DURRABackendExt, self).__init__(parent)
 
         self.durradocument = DURRADocumentKrita()
         self.workdir = ""
@@ -57,18 +56,31 @@ class DURRABackendExt(EXTENSION):
     def load(self):
         if CONTEXT_KRITA:
             document = Krita.instance().activeDocument()
-            filename_kra = document.fileName()
-            self.workdir = self._getWorkdir(filename_kra)
+            if document:
+                filename_kra = document.fileName()
+                self.workdir = self._getWorkdir(filename_kra)
 
-            self.durradocument.loadVersionFromWorkdir(self.workdir)
-            self.durradocument.loadDocument(document)
+                if TESTING:
+                    self.output = self.output + self.durradocument.versionstr + "\n"
+                self.durradocument.loadVersionFromWorkdir(self.workdir)
+                if TESTING:
+                    self.output = self.output + self.durradocument.versionstr + "\n"
+                    newversionstr = "0." + self.durradocument.revisionstr + ".0"
+                    self.output = self.output + str(self.durradocument.ver_cmp(newversionstr, self.durradocument.versionstr)) + "\n"
+                    self.output = self.output + ';'.join(map(str, self.durradocument.ver_arr(newversionstr))) + "\n"
+                    self.output = self.output + ';'.join(map(str, self.durradocument.ver_arr(self.durradocument.versionstr))) + "\n"
+                self.durradocument.loadDocument(document)
+                if TESTING:
+                    self.output = self.output + self.durradocument.versionstr + "\n"
+                    newversionstr = "0." + self.durradocument.revisionstr + ".0"
+                    self.output = self.output + str(self.durradocument.ver_cmp(newversionstr, self.durradocument.versionstr)) + "\n"
+                    self.output = self.output + ';'.join(map(str, self.durradocument.ver_arr(newversionstr))) + "\n"
+                    self.output = self.output + ';'.join(map(str, self.durradocument.ver_arr(self.durradocument.versionstr))) + "\n"
     
     def save(self):
         if CONTEXT_KRITA:
-            if self.durradocument.document:
-                succ = self.durradocument.document.save()
-                self.durradocument.loadDocument(self.durradocument.document)
-                return succ
+            if self.durradocument.getKritaDocument():
+                return self.durradocument.saveKritaDocument()
         return False
 
     def println(self, str):
@@ -76,7 +88,7 @@ class DURRABackendExt(EXTENSION):
             self.output = self.output + str + '\n'
 
     def makeMetaFiles(self):
-        if not self.durradocument.filename_name:
+        if not self.durradocument.getFilenameBaseName():
             self.println('filename is empty')
             return []
 
@@ -85,7 +97,7 @@ class DURRABackendExt(EXTENSION):
         return files
     
     def makeFiles(self):
-        if not self.durradocument.filename_name:
+        if not self.durradocument.getFilenameBaseName():
             self.println('filename is empty')
             return []
 
@@ -101,18 +113,21 @@ class DURRABackendExt(EXTENSION):
 
         return output
 
+    def runCmd(self, cmd, workdir):
+        result = subprocess.run(cmd, cwd=workdir, capture_output=True)
+        output = ''
+        output = output + '$ ' + ' '.join(cmd) + "\n"
+        output = output + result.stdout.decode('UTF-8')
+        self.println(result.stderr.decode('UTF-8'))
+        return output
+
     def _gitAdd(self, workdir, files):
         output = ''
 
         for file in files:
             if file:
                 cmd = ['git', 'add ', quote(file)]
-                (out, err) = subprocess.Popen(cmd, cwd=workdir,
-                                              stdout=subprocess.PIPE, shell=True).communicate()
-
-                output = output + '$ ' + cmd + "\n"
-                output = output + out.decode('UTF-8')
-                self.println(err)
+                output = output + self.runCmd(cmd, workdir)
         
         return output
 
@@ -121,7 +136,7 @@ class DURRABackendExt(EXTENSION):
 
         cmd = ['git', 'commit', '-m',  quote(msg)]
         if description:
-            cmd.extend(['-m ', quote(description).replace("\n", "\\n")])
+            cmd.extend(['-m ', quote(description.replace("\n", "\\n"))])
         
         if authorname:
             authorargstr = quote(authorname) 
@@ -131,13 +146,7 @@ class DURRABackendExt(EXTENSION):
             authorarg = '--author=' + authorargstr
             cmd.append(authorarg)
         
-        (out, err) = subprocess.Popen(cmd, cwd=workdir,
-                                      stdout=subprocess.PIPE, shell=True).communicate()
-
-        output = output + '$ ' + cmd + "\n"
-        output = output + out.decode('UTF-8')
-        
-        self.println(err)
+        output = output + self.runCmd(cmd, workdir)
 
         return output
 
@@ -152,10 +161,10 @@ class DURRABackendExt(EXTENSION):
         return output
 
     def _generateDocumentFiles(self, onlymetafiles=False):
-        if self.durradocument.document is not None:
-            filename = self.durradocument.filename_kra
+        if self.durradocument.hasKritaDocument():
+            filename = self.durradocument.getFilenameKra()
 
-            if filename != "":
+            if filename:
                 files = []
                 if onlymetafiles:
                     files = self.makeMetaFiles()
@@ -173,19 +182,19 @@ class DURRABackendExt(EXTENSION):
 
 
     def commitDocumentMetafiles(self, extramsg=None):
-        return self._commitDocument(False, extramsg)
+        return self._commitDocument(True, extramsg)
     
     def commitDocument(self, extramsg=None):
-        return self._commitDocument(True, extramsg)
+        return self._commitDocument(False, extramsg)
 
     def _commitDocument(self, onlymetafiles=False, extramsg=None):
-        if self.durradocument.document:
-            filename = self.durradocument.filename_kra
+        if self.durradocument.hasKritaDocument():
+            filename = self.durradocument.getFilenameKra()
 
             if filename != "":
                 files = self._generateDocumentFiles(onlymetafiles)
 
-                name = self.durradocument.document.name()
+                name = self.durradocument.getKritaDocument().name()
                 workdir_basename = os.path.basename(os.path.normpath(self.workdir))
 
                 outputfiles = "generate Files: " + "\n - ".join(str(x) for x in files) + "\n\n"
@@ -194,14 +203,19 @@ class DURRABackendExt(EXTENSION):
                 mnrs = re.search(r"^\s*(\d+)\s+\-\s+.*$", workdir_basename)
                 nr = mnrs.group(1) if mnrs is not None else ""
                 nrstr = None
+                close_issue_msg = ""
                 if nr:
                     nrstr = "#{0}".format(int(nr))
+                    close_issue_msg = " Closes " + nrstr
 
                 msg = ""
 
+                if TESTING:
+                    self.output = self.output + str(self.durradocument)
+
                 if self.durradocument.releaseversion and self.durradocument.isnewversion:
                     if self.durradocument.versionstr == "1.0.0":
-                        msg = "finished " + name + " v" + self.durradocument.versionstr + " Closes " + nrstr
+                        msg = "finished " + name + " v" + self.durradocument.versionstr + close_issue_msg
                     else:
                         msg = "new version of " + name + " v" + self.durradocument.versionstr
                 else:
@@ -220,39 +234,42 @@ class DURRABackendExt(EXTENSION):
 
 
     def newMajorVersion(self):
-        return self.durradocument.newMajorVersion()
+        return self.durradocument.setNewMajorVersion()
 
     def newMinjorVersion(self):
-        return self.durradocument.newMinjorVersion()
+        return self.durradocument.setNewMinjorVersion()
 
     def newPatchVersion(self):
         return self.durradocument.setNewPatchVersion()
+
+    def newPatchedVersion(self):
+        return self.newPatchVersion()
 
 
 
 
     
     def generateDocumentMetafilesCurrentVersion(self):
-        if self.durradocument.document is not None:
+        if self.durradocument.hasKritaDocument():
             return self.generateDocumentMetaFiles()
         else:
             return 'document is not set'
     
     def commitDocumentMetafilesCurrentVersion(self, extramsg=None):
-        if self.durradocument.document is not None:
+        if self.durradocument.hasKritaDocument():
             return self.commitDocumentMetafiles(extramsg)
         else:
             return 'document is not set'
 
     
     def generateDocumentCurrentVersion(self):
-        if self.durradocument.document is not None:
+        if self.durradocument.hasKritaDocument():
             return self.generateDocument()
         else:
             return 'document is not set'
 
     def commitDocumentCurrentVersion(self, extramsg=None):
-        if self.durradocument.document is not None:
+        if self.durradocument.hasKritaDocument():
             return self.commitDocument(extramsg)
         else:
             return 'document is not set'
@@ -260,14 +277,14 @@ class DURRABackendExt(EXTENSION):
 
 
     def generateDocumentNewMinjorVersion(self):
-        if self.durradocument.document is not None:
+        if self.durradocument.hasKritaDocument():
             self.newMinjorVersion()
             return self.generateDocument()
         else:
             return 'document is not set'
 
     def commitDocumentNewMinjorVersion(self, extramsg=None):
-        if self.durradocument.document is not None:
+        if self.durradocument.hasKritaDocument():
             self.newMinjorVersion()
             return self.commitDocument(extramsg)
         else:
@@ -276,14 +293,14 @@ class DURRABackendExt(EXTENSION):
 
 
     def generateDocumentNewMajorVersion(self):
-        if self.durradocument.document is not None:
+        if self.durradocument.hasKritaDocument():
             self.newMajorVersion()
             return self.generateDocument()
         else:
             return 'document is not set'
 
     def commitDocumentNewMajorVersion(self, extramsg=None):
-        if self.durradocument.document is not None:
+        if self.durradocument.hasKritaDocument():
             self.newMajorVersion()
             return self.commitDocument(extramsg)
         else:
@@ -292,14 +309,14 @@ class DURRABackendExt(EXTENSION):
 
 
     def generateDocumentNewPatchedVersion(self):
-        if self.durradocument.document is not None:
+        if self.durradocument.hasKritaDocument():
             self.newPatchedVersion()
             return self.generateDocument()
         else:
             return 'document is not set'
 
     def commitDocumentNewPatchedVersion(self, extramsg=None):
-        if self.durradocument.document is not None:
+        if self.durradocument.hasKritaDocument():
             self.newPatchedVersion()
             return self.commitDocument(extramsg)
         else:

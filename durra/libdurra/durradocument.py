@@ -6,7 +6,10 @@ import re
 from datetime import datetime
 import math
 
-import markdown2
+try:
+    from . import markdown2
+except:
+    import markdown2
 
 
 class DURRADocument(object):
@@ -17,10 +20,11 @@ class DURRADocument(object):
         self.categories = []
         self.duration_sec = 0
         self.keywords = []
-        self.date = datetime.datetime.now()
+        self.date = datetime.now()
         self.authorname = "Unknown"
         self.authoremail = ""
         self.license = ""
+        self.revisionstr = "0"
 
         self.tags = []
         self.points = None
@@ -36,7 +40,7 @@ class DURRADocument(object):
     @staticmethod
     def getTrelloTitle(categories, title, tags, timeentry, points, hashtags, prio):
         """Category | Card Title [tag] {time-entry} |points| #hashtag !"""
-        category_str = categories.join('| ')
+        category_str = '| '.join(categories)
 
         tags_str=""
         for t in tags:
@@ -64,6 +68,9 @@ class DURRADocument(object):
         if prio_str != "":
             prio_str = " " + prio_str
 
+        if category_str:
+            title = " " + title
+
         return category_str + title + timeentry_str + points_str + tags_str + hashtag_str + prio_str
 
 
@@ -88,8 +95,9 @@ class DURRADocument(object):
             output.write("\n### " + self.subject + "\n\n")
         output.write(self.description)
         
+        ret = output.getvalue()
         output.close()
-        return output.getvalue()
+        return ret
 
     def getDescriptionContentBBCode(self):
         return self.markdown_to_bbcode(self.getDescriptionContent())
@@ -132,7 +140,7 @@ class DURRADocument(object):
 
         title = self.getTrelloTitle(self.categories, self.title, self.tags, dura, self.points, newkeywords, self.prio)
 
-        output.write("#" + title + "\n")
+        output.write("# " + title + "\n")
         output.write("\n")
 
         output.write("## Description\n")
@@ -150,8 +158,9 @@ class DURRADocument(object):
         output.write("  \n")
         output.write("  \n")
 
+        ret = output.getvalue()
         output.close()
-        return output.getvalue()
+        return ret
 
     def genReadmeFile(self, workdir):
         filename = os.path.join(os.path.normpath(workdir), 'README.md')
@@ -167,11 +176,12 @@ class DURRADocument(object):
 
         output = io.StringIO()
 
-        output.write(license + "  \n")
+        output.write(self.license + "  \n")
         output.write("Art by " + self.authorname + authoremail_output + "\n")
 
+        ret = output.getvalue()
         output.close()
-        return output.getvalue()
+        return ret
 
     def genLicenseFile(self, workdir):
         filename = os.path.join(os.path.normpath(workdir), 'LICENSE')
@@ -204,8 +214,9 @@ class DURRADocument(object):
 
         output.write(self.versionstr)
 
+        ret = output.getvalue()
         output.close()
-        return output.getvalue()
+        return ret
 
     def genVersionFile(self, workdir):
         filename = os.path.join(os.path.normpath(workdir), 'VERSION')
@@ -274,30 +285,27 @@ class DURRADocument(object):
 
     def setNewMajorVersion(self):
         versionarr = self.getVERSIONArr()
-        revision = None
         newversion = versionarr
-        newversion[0] = newversion[0] + 1
+        newversion[0] = versionarr[0] + 1
         newversion[1] = 0
         newversion[2] = 0
-        return self.setNewVersion(newversion, revision)
+        return self.setNewReleaseVersion(newversion)
 
     def setNewMinjorVersion(self):
         versionarr = self.getVERSIONArr()
-        revision = 0
         newversion = versionarr
-        newversion[0] = newversion[0]
-        newversion[1] = newversion[1] + 1
+        newversion[0] = versionarr[0]
+        newversion[1] = versionarr[1] + 1
         newversion[2] = 0
-        return self.setNewVersion(newversion, revision)
+        return self.setNewReleaseVersion(newversion)
 
     def setNewPatchVersion(self):
         versionarr = self.getVERSIONArr()
         newversion = versionarr
-        newversion[0] = newversion[0]
-        newversion[1] = newversion[1]
-        newversion[2] = newversion[2] + 1
-        revision = newversion[2]
-        return self.setNewVersion(newversion, revision)
+        newversion[0] = versionarr[0]
+        newversion[1] = versionarr[1]
+        newversion[2] = versionarr[2] + 1
+        return self.setNewReleaseVersion(newversion)
 
     def setNewPatchRevisionVersion(self, revision):
         newversion = self.getVERSIONArr()
@@ -378,14 +386,29 @@ class DURRADocument(object):
     def ver_arr(versionstr):
         va = versionstr.split('.')
         return [
-            int(va[0]) if va[0] is not None else 0,
-            int(va[1]) if va[1] is not None else 0,
-            int(va[2]) if va[2] is not None else 0
+            int(va[0]) if len(va) >= 1 and va[0] else 0,
+            int(va[1]) if len(va) >= 2 and va[1] else 0,
+            int(va[2]) if len(va) >= 3 and va[2] else 0
         ]
-
+        
     @staticmethod
     def ver_cmp(a, b):
-        return cmp(DURRADocument.ver_arr(a), DURRADocument.ver_arr(b))
+        va = DURRADocument.ver_arr(a)
+        vb = DURRADocument.ver_arr(b)
+
+        if (va[0] == vb[0]) and (va[1] == vb[1]) and (va[2] == vb[2]):
+            return 0
+
+        if (va[0] > vb[0]):
+            return 1
+
+        if (va[1] > vb[1]):
+            return 1
+
+        if (va[2] > vb[2]):
+            return 1
+
+        return -1
 
     @staticmethod
     def markdown_to_html(s):
