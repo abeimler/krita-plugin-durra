@@ -1,0 +1,4 @@
+markdown2
+PyQt5
+Qt.py
+GitPython
