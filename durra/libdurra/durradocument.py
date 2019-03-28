@@ -149,14 +149,33 @@ class DURRADocument(object):
         output.write("\n")
         output.write("\n")
 
+        output.write("## More Infos\n")
+        output.write("\n")
         output.write("Date: " + self.date.strftime("%d.%m.%Y") + "  \n")
         output.write("Duration: " + dura_text + "  \n")
         output.write("  \n")
         output.write("  \n")
-        output.write("## Keywords\n")
-        output.write(' '.join(newkeywords) + "  \n")
+
+        output.write("## Credits\n")
+        output.write("\n")
+        output.write(self.getLicenseContent())
         output.write("  \n")
         output.write("  \n")
+
+        if len(newkeywords) > 0:
+            output.write("## Keywords\n")
+            output.write(' '.join(newkeywords) + "  \n")
+            output.write("  \n")
+            output.write("  \n")
+
+
+            newkeywords_hashtags_str=""
+            for ht in newkeywords:
+                newkeywords_hashtags_str = newkeywords_hashtags_str + "#{0}".format(ht) + " "
+            output.write("## Keywords (Hashtags)\n")
+            output.write(newkeywords_hashtags_str + "  \n")
+            output.write("  \n")
+            output.write("  \n")
 
         ret = output.getvalue()
         output.close()
@@ -310,6 +329,10 @@ class DURRADocument(object):
     def setNewPatchRevisionVersion(self, revision):
         newversion = self.getVERSIONArr()
         return self.setNewVersion(newversion, revision)
+
+    def setRevisionVersion(self):
+        self.versionstr = "0." + self.revisionstr + ".0"
+        return self.versionstr
 
     def getDurationText(self):
         timeElapsed = int(self.duration_sec) if self.duration_sec != 0 else 0

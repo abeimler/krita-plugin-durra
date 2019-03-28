@@ -20,7 +20,7 @@ except ImportError:  # script being run in testing environment without Krita
     CONTEXT_KRITA = False
     EXTENSION = QWidget
 
-TESTING=True
+TESTING=False
 
 from .durradocumentkrita import DURRADocumentKrita
 
@@ -114,7 +114,7 @@ class DURRABackendExt(EXTENSION):
         return output
 
     def runCmd(self, cmd, workdir):
-        result = subprocess.run(cmd, cwd=workdir, capture_output=True)
+        result = subprocess.run(' '.join(cmd), cwd=workdir, shell=True, capture_output=True)
         output = ''
         output = output + '$ ' + ' '.join(cmd) + "\n"
         output = output + result.stdout.decode('UTF-8')
@@ -212,6 +212,7 @@ class DURRABackendExt(EXTENSION):
 
                 if TESTING:
                     self.output = self.output + str(self.durradocument)
+                    self.output = self.output + str(self.durradocument.releaseversion) + str(self.durradocument.isnewversion)
 
                 if self.durradocument.releaseversion and self.durradocument.isnewversion:
                     if self.durradocument.versionstr == "1.0.0":
@@ -245,6 +246,9 @@ class DURRABackendExt(EXTENSION):
     def newPatchedVersion(self):
         return self.newPatchVersion()
 
+    def revisionVersion(self):
+        return self.durradocument.setRevisionVersion()
+
 
 
 
@@ -264,12 +268,14 @@ class DURRABackendExt(EXTENSION):
     
     def generateDocumentCurrentVersion(self):
         if self.durradocument.hasKritaDocument():
+            self.revisionVersion()
             return self.generateDocument()
         else:
             return 'document is not set'
 
     def commitDocumentCurrentVersion(self, extramsg=None):
         if self.durradocument.hasKritaDocument():
+            self.revisionVersion()
             return self.commitDocument(extramsg)
         else:
             return 'document is not set'

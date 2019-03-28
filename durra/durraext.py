@@ -32,7 +32,7 @@ except ImportError:  # script being run in testing environment without Krita
     EXTENSION = QWidget
     WIDGET = QWidget
 
-TESTING = True
+TESTING=False
 
 from .libdurra.durrabackendext import DURRABackendExt
 from .ui_main import Ui_durraDialog
@@ -271,6 +271,7 @@ class DURRAExt(Ui_durraDialog, EXTENSION):
                     ['git', 'init ', quote(initgit_dir)],
                     ['git', 'lfs', 'install'],
                     ['git', 'lfs', 'track', '"*.kra"'],
+                    ['git', 'lfs', 'track', '"*.png"'],
                     ['git', 'lfs', 'track', '"_preview.png"']
                 ]
 
