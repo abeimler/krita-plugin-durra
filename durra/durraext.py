@@ -91,6 +91,7 @@ class DURRAExt(Ui_durraDialog, EXTENSION):
             action.triggered.connect(self.action_triggered)
 
     def action_triggered(self):
+        self.backend.output = ""
         self.initDocument()
         self.ui.show()
         self.ui.activateWindow()
@@ -99,20 +100,21 @@ class DURRAExt(Ui_durraDialog, EXTENSION):
         self.ui.close()
 
     def reload(self):
-        self.initDocument();
+        self.initDocument()
 
     def initDocument(self):
+        self.txtLog.clear()
         self.backend.load()
 
         if self.backend.durradocument.hasKritaDocument():
             self.initUIDocumentInfo()
             self.enableButtons()
-            self.txtLog.clear()
 
             if TESTING:
                 docInfo = self.backend.durradocument.getKritaDocumentInfo()
                 self.backend.output = self.backend.output + "\n\n" + docInfo
-                self.txtLog.setPlainText(self.backend.output)
+            
+            self.txtLog.setPlainText(self.backend.output)
             
         else:
             self.lblFilename.setText('document not open')
@@ -335,6 +337,16 @@ class DURRAExt(Ui_durraDialog, EXTENSION):
                 self.btnNewMajorVersion.setEnabled(False)
                 self.btnNewMinjorVersion.setEnabled(False)
                 self.btnNewPatchedVersion.setEnabled(False)
+
+            if not self.backend.gitIsRepo(self.backend.workdir):
+                self.btnInitGit.setEnabled(True)
+                self.btnCommit.setEnabled(False)
+                self.btnCommitMetaFiles.setEnabled(False)
+                self.btnNewMajorVersion.setEnabled(False)
+                self.btnNewMinjorVersion.setEnabled(False)
+                self.btnNewPatchedVersion.setEnabled(False)
+            else:
+                self.btnInitGit.setEnabled(False)
         else:
             self.btnSave.setEnabled(False)
             self.btnGenFiles.setEnabled(False)

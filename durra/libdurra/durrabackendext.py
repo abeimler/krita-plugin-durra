@@ -3,6 +3,7 @@ import sys
 
 import re
 import subprocess
+import shutil
 from shlex import quote
 
 from PyQt5.QtCore import QStandardPaths, QSettings
@@ -20,7 +21,7 @@ except ImportError:  # script being run in testing environment without Krita
     CONTEXT_KRITA = False
     EXTENSION = QWidget
 
-TESTING=False
+TESTING=True
 
 from .durradocumentkrita import DURRADocumentKrita
 
@@ -61,23 +62,15 @@ class DURRABackendExt(EXTENSION):
             if document:
                 filename_kra = document.fileName()
                 self.workdir = self._getWorkdir(filename_kra)
+                status = self._gitStatus(self.workdir)
+                if not status:
+                    self.output = self.output + 'not a git repository (or any of the parent directories)' + "\n"
+                else:
+                    if TESTING:
+                        self.output = self.output + status + "\n"
 
-                if TESTING:
-                    self.output = self.output + self.durradocument.versionstr + "\n"
                 self.durradocument.loadVersionFromWorkdir(self.workdir)
-                if TESTING:
-                    self.output = self.output + self.durradocument.versionstr + "\n"
-                    newversionstr = "0." + self.durradocument.revisionstr + ".0"
-                    self.output = self.output + str(self.durradocument.ver_cmp(newversionstr, self.durradocument.versionstr)) + "\n"
-                    self.output = self.output + ';'.join(map(str, self.durradocument.ver_arr(newversionstr))) + "\n"
-                    self.output = self.output + ';'.join(map(str, self.durradocument.ver_arr(self.durradocument.versionstr))) + "\n"
                 self.durradocument.loadDocument(document)
-                if TESTING:
-                    self.output = self.output + self.durradocument.versionstr + "\n"
-                    newversionstr = "0." + self.durradocument.revisionstr + ".0"
-                    self.output = self.output + str(self.durradocument.ver_cmp(newversionstr, self.durradocument.versionstr)) + "\n"
-                    self.output = self.output + ';'.join(map(str, self.durradocument.ver_arr(newversionstr))) + "\n"
-                    self.output = self.output + ';'.join(map(str, self.durradocument.ver_arr(self.durradocument.versionstr))) + "\n"
     
     def save(self):
         if CONTEXT_KRITA:
@@ -115,13 +108,68 @@ class DURRABackendExt(EXTENSION):
 
         return output
 
-    def runCmd(self, cmd, workdir):
-        result = subprocess.run(' '.join(cmd), cwd=workdir, shell=True, capture_output=True)
+    def isWindows(self):
+        return os.name == 'nt'
+
+    def runCmd(self, cmd, workdir, silence=False):
         output = ''
-        output = output + '$ ' + ' '.join(cmd) + "\n"
-        output = output + result.stdout.decode('UTF-8')
-        self.println(result.stderr.decode('UTF-8'))
+        wd = os.getcwd()
+        os.chdir(workdir)
+        try:
+            if self.isWindows():
+                result = subprocess.run(' '.join(cmd), cwd=workdir, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                if not silence:
+                    output = output + '$ ' + ' '.join(cmd) + "\n"
+                output = output + result.stdout.decode("latin")
+                if not silence:
+                    if(result.stderr):
+                        self.println(result.stderr.decode("latin"))
+                return output
+            
+            result = subprocess.run(' '.join(cmd), cwd=workdir, shell=True, capture_output=True)
+            if not silence:
+                output = output + '$ ' + ' '.join(cmd) + "\n"
+            output = output + result.stdout.decode()
+            if not silence:
+                self.println(result.stderr.decode())
+            return output
+        except subprocess.CalledProcessError as err:
+            output = output + "Error with Code " + err.returncode + "\n"
+            if err.stdout:
+                if not silence:
+                    self.println(err.output.decode())
+                output = output + err.stdout.decode() + "\n"
+            if err.stderr:
+                if not silence:
+                    self.println(err.stderr.decode())
+                output = output + 'Error: ' + err.stderr.decode() + "\n"
+        finally:
+            os.chdir(wd)
+
+
         return output
+
+    def _gitStatus(self, workdir):
+        cmd = ['git', 'status']
+        output = self.runCmd(cmd, workdir)
+
+        if not output:
+            return False
+        if output.find('not a git repository') >= 0:
+            return False
+        
+        return output
+
+    def gitIsRepo(self, workdir):
+        cmd = ['git', 'status']
+        output = self.runCmd(cmd, workdir, True)
+
+        if not output:
+            return False
+        if output.find('not a git repository') >= 0:
+            return False
+        
+        return True
 
     def _gitAdd(self, workdir, files):
         output = ''
@@ -153,8 +201,16 @@ class DURRABackendExt(EXTENSION):
         return output
 
     def getGitInitCmds(self, initgit_dir):
+        indir = quote(initgit_dir)
+        if self.isWindows():
+            indir = initgit_dir.replace('\\', '\\\\')
+
+        initcmd = ['git', 'init ', indir]
+        if self.isWindows():
+            initcmd = ['cd', indir, '&&', 'git', 'init'] # hotfix, fallback command if git init ... is not working, I don't know why @FIXME
+        
         return [
-            ['git', 'init ', quote(initgit_dir)],
+            initcmd,
             ['git', 'lfs', 'install'],
             ['git', 'lfs', 'track', '"*.kra"'],
             ['git', 'lfs', 'track', '"*.png"'],
