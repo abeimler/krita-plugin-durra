@@ -36,6 +36,8 @@ class DURRABackendExt(EXTENSION):
 
         self.output = ""
 
+        self.script_abs_path = os.path.dirname(os.path.realpath(__file__))
+
     def setup(self):
         self.output = ""
         self.load()
@@ -147,6 +149,42 @@ class DURRABackendExt(EXTENSION):
             cmd.append(authorarg)
         
         output = output + self.runCmd(cmd, workdir)
+
+        return output
+
+    def getGitInitCmds(self, initgit_dir):
+        return [
+            ['git', 'init ', quote(initgit_dir)],
+            ['git', 'lfs', 'install'],
+            ['git', 'lfs', 'track', '"*.kra"'],
+            ['git', 'lfs', 'track', '"*.png"'],
+            ['git', 'lfs', 'track', '"_preview.png"']
+        ]
+
+    def runGitInit(self, initgit_dir):
+        output = ''
+        cmds = self.getGitInitCmds(initgit_dir)
+        for cmd in cmds:
+            output = output + self.runCmd(cmd, initgit_dir)
+
+        src_gitignore_file = os.path.join(self.script_abs_path, ".gitignore")
+        dest_gitignore_file = os.path.join(initgit_dir, ".gitignore")
+        try:
+            if not os.path.exists(dest_gitignore_file):
+                shutil.copyfile(src_gitignore_file, dest_gitignore_file)
+        except IOError as e:
+            output = output + "Unable to copy file: {} {}".format(dest_gitignore_file, e)
+
+        gitattributes_file = os.path.join(initgit_dir, ".gitattributes")
+
+        cmds = [
+            ['git', 'add ', quote(dest_gitignore_file)],
+            ['git', 'add ', quote(gitattributes_file)],
+            ['git', 'commit', '-m', quote('update gitignore and gitattributes')]
+        ]
+
+        for cmd in cmds:
+            output = output + self.runCmd(cmd, initgit_dir)
 
         return output
 

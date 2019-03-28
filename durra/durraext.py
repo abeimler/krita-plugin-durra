@@ -267,13 +267,7 @@ class DURRAExt(Ui_durraDialog, EXTENSION):
             )
 
             if initgit_dir:
-                cmds = [
-                    ['git', 'init ', quote(initgit_dir)],
-                    ['git', 'lfs', 'install'],
-                    ['git', 'lfs', 'track', '"*.kra"'],
-                    ['git', 'lfs', 'track', '"*.png"'],
-                    ['git', 'lfs', 'track', '"_preview.png"']
-                ]
+                cmds = self.backend.getGitInitCmds(initgit_dir)
 
 
                 btnMsg = "Are you sure you want to `init git` in " + initgit_dir + "\n\n" + "Commands to run:\n"
@@ -285,30 +279,7 @@ class DURRAExt(Ui_durraDialog, EXTENSION):
                 if buttonReply == QMessageBox.Yes:
                     self.txtLog.clear()
 
-                    output = ''
-
-                    for cmd in cmds:
-                        output = output + self.backend.runCmd(cmd, workdir)
-
-
-                    src_gitignore_file = os.path.join(self.script_abs_path, ".gitignore")
-                    dest_gitignore_file = os.path.join(initgit_dir, ".gitignore")
-                    try:
-                        if not os.path.exists(dest_gitignore_file):
-                            shutil.copyfile(src_gitignore_file, dest_gitignore_file)
-                    except IOError as e:
-                        output = output + "Unable to copy file: {} {}".format(dest_gitignore_file, e)
-
-                    gitattributes_file = os.path.join(initgit_dir, ".gitattributes")
-
-                    cmds = [
-                        ['git', 'add ', quote(dest_gitignore_file)],
-                        ['git', 'add ', quote(gitattributes_file)],
-                        ['git', 'commit', '-m', '"update gitignore and gitattributes"']
-                    ]
-
-                    for cmd in cmds:
-                        output = output + self.backend.runCmd(cmd, workdir)
+                    output = self.backend.runGitInit(initgit_dir)
                     
                     self.txtLog.setPlainText(output)
                     self.txtLog.moveCursor(QtGui.QTextCursor.End)
