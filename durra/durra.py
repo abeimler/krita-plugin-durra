@@ -9,9 +9,11 @@ except ImportError:  # script being run in testing environment without Krita
     EXTENSION = QWidget
 
 from .durraext import DURRAExt
+from .durradocker import DURRADocker
 
 if CONTEXT_KRITA:
     # And add the extension to Krita's list of extensions:
     app = Krita.instance()
     extension = DURRAExt(parent=app)  # instantiate your class
     app.addExtension(extension)
+    app.addDockWidgetFactory(DockWidgetFactory("durra", DockWidgetFactoryBase.DockLeft, DURRADocker))

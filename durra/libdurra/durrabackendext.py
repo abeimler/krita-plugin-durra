@@ -26,12 +26,10 @@ TESTING=True
 from .durradocumentkrita import DURRADocumentKrita
 
 
-class DURRABackendExt(EXTENSION):
+class DURRABackendExt(object):
     PREVIEW_SCALE = 0.5
 
-    def __init__(self, parent):
-        super(DURRABackendExt, self).__init__(parent)
-
+    def __init__(self):
         self.durradocument = DURRADocumentKrita()
         self.workdir = ""
 
@@ -207,7 +205,7 @@ class DURRABackendExt(EXTENSION):
 
         initcmd = ['git', 'init ', indir]
         if self.isWindows():
-            initcmd = ['cd', indir, '&&', 'git', 'init'] # hotfix, fallback command if git init ... is not working, I don't know why @FIXME
+            initcmd = ['cd', indir, '&&', 'git', 'init'] # hotfix, fallback command of git init ... is not working, I don't know why @FIXME
         
         return [
             initcmd,
