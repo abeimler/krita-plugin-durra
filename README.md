@@ -109,15 +109,12 @@ $ git lfs track "*.psd"
 See [git - Setup Manuelly](#git-setup-manually) for more details.
 
 
-### SVN
-
-> TODO
 
 
 
 ## How To Use
 
-Goto **Tools > Scripting > Developer Uses Revision contRoll for Art**  
+Goto **Tools > Scripting > DURRA**  
 
 ### Document Info
 
