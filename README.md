@@ -409,20 +409,59 @@ Summary of Document Info and some more Informations.
 **Example:**
 
 ```markdown
-# My Artwork Title
+# TestArt test {0 hours} #a #b #c #d 
 
-## My Artwork Subject
+## Description
 
-Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
 
-Date: 26.04.2018
-Duration: 3 minutes 42 seconds (0 hours)
+### TestArt
 
-Keywords: #a #b #c #abc #s__p_a_c_e
+An h1 header
+============
+
+Paragraphs are separated by a blank line.
+
+2nd paragraph. *Italic*, **bold**, and `monospace`. Itemized lists
+look like:
+
+  * this one
+  * that one
+  * the other one
+
+Note that --- not considering the asterisk --- the actual text
+content starts at 4-columns in.
+
+> Block quotes are
+> written like so.
+>
+> They can span multiple paragraphs,
+> if you like.
+
+Use 3 dashes for an em-dash. Use 2 dashes for ranges (ex., "it's all
+in chapters 12--14"). Three dots ... will be converted to an ellipsis.
+Unicode is supported. ☺
+
+
+## More Infos
+
+Date: 30.03.2019  
+Duration: 17 minutes 55 seconds (0 hours)  
+  
+  
+## Credits
+
+Art by Me  
+  
+  
+## Keywords
+a b c d  
+  
+  
+## Keywords (Hashtags)
+#a #b #c #d   
+
 ```
 
-ps.  
-I love Kritas editing time feature :)  
 
 
 ## Limitation
