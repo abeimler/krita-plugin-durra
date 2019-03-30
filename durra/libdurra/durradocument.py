@@ -31,11 +31,19 @@ class DURRADocument(object):
         self.prio = 0
 
         self.versionstr = "0.0.0"
-        self.isnewversion = False
         self.releaseversion = False
 
     def getKeywordsStr(self):
         return ";".join(self.keywords)
+
+    def loadVersionFromWorkdir(self, workdir):
+        filename = ""
+        if workdir != "":
+            filename = os.path.join(os.path.normpath(workdir), 'VERSION')
+            if os.path.isfile(filename):
+                f = open(filename, "r")
+                self.versionstr = f.read()
+                f.close()
     
     @staticmethod
     def getTrelloTitle(categories, title, tags, timeentry, points, hashtags, prio):
@@ -212,13 +220,11 @@ class DURRADocument(object):
     def setNewVersion(self, newversion, revision=None):
         versionarr = self.getNewVersionArr(newversion, revision)
         self.versionstr = self.ver_str(versionarr)
-        self.isnewversion = True
         return self.versionstr
     
     def setNewReleaseVersion(self, newversion):
         versionarr = self.getNewVersionArr(newversion, None)
         self.versionstr = self.ver_str(versionarr)
-        self.isnewversion = True
         self.releaseversion = True
         return self.versionstr
     
@@ -260,15 +266,6 @@ class DURRADocument(object):
                  filenameReadme, filenameLicense, filenameVersion]
 
         return files
-
-    def loadVersionFromWorkdir(self, workdir):
-        filename = ""
-        if workdir != "":
-            filename = os.path.join(os.path.normpath(workdir), 'VERSION')
-            if os.path.isfile(filename):
-                f = open(filename, "r")
-                self.versionstr = f.read()
-                f.close()
 
         
     
@@ -329,6 +326,9 @@ class DURRADocument(object):
     def setNewPatchRevisionVersion(self, revision):
         newversion = self.getVERSIONArr()
         return self.setNewVersion(newversion, revision)
+
+    def getRevisionVersion(self):
+        return "0." + self.revisionstr + ".0"
 
     def setRevisionVersion(self):
         self.versionstr = "0." + self.revisionstr + ".0"

@@ -59,8 +59,12 @@ class DURRADocker(WIDGET, DURRAExtBase):
         self.disableButtons()
         self.reload()
 
+    def updateLog(self):
+        self.txtLog.setPlainText(self.lastlog)
+
     def canvasChanged(self, canvas):
         self.reload()
+        self.txtLog.setPlainText(self.lastlog)
 
     def createActions(self, window):
         action = window.createAction(MAIN_KRITA_ID, "Generate Meta-Files")
@@ -85,6 +89,10 @@ class DURRADocker(WIDGET, DURRAExtBase):
     def setupUi(self, mainWidget):
         self.txtMessage = QtWidgets.QTextEdit(mainWidget)
         self.txtMessage.setObjectName("txtMessage")
+
+        self.txtLog = QtWidgets.QTextEdit(mainWidget)
+        self.txtLog.setReadOnly(True)
+        self.txtLog.setObjectName("txtLog")
 
         self.btnGenFiles = QtWidgets.QPushButton(mainWidget)
         self.btnGenFiles.setObjectName("btnGenFiles")
@@ -113,6 +121,7 @@ class DURRADocker(WIDGET, DURRAExtBase):
         
         mainWidget.setLayout(QVBoxLayout())
         mainWidget.layout().addWidget(self.txtMessage)
+        mainWidget.layout().addWidget(self.txtLog)
         mainWidget.layout().addWidget(self.btnGenFiles)
         mainWidget.layout().addWidget(self.btnCommitMetaFiles)
         mainWidget.layout().addWidget(self.btnCommit)
@@ -125,6 +134,8 @@ class DURRADocker(WIDGET, DURRAExtBase):
         _translate = QtCore.QCoreApplication.translate
         mainWidget.setWindowTitle(_translate("durraDialog", "DURRA"))
         self.txtMessage.setPlaceholderText(_translate("durraDialog", "Commit Message"))
+        self.txtLog.setToolTip(_translate("durraDialog", "Log"))
+        self.txtLog.setPlaceholderText(_translate("durraDialog", "Log/Output"))
         self.btnGenFiles.setToolTip(_translate("durraDialog", "<html><head/><body><p>generate only Meta-Files: TITLE, DESCRIPTION, KEYWORD, README.md, LICENSE and VERSION</p></body></html>"))
         self.btnGenFiles.setText(_translate("durraDialog", "&Generate Meta-Files"))
         self.btnCommitMetaFiles.setToolTip(_translate("durraDialog", "<html><head/><body><p>generate only Meta-Files: TITLE, DESCRIPTION, KEYWORD, README.md, LICENSE and VERSION</p><p>and make a commit</p><p>(use this if you just want to commit the Meta-Files, not Images)</p><p><br/></p></body></html>"))

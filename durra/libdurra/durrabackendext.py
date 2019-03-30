@@ -21,7 +21,7 @@ except ImportError:  # script being run in testing environment without Krita
     CONTEXT_KRITA = False
     EXTENSION = QWidget
 
-TESTING=True
+TESTING=False
 
 from .durradocumentkrita import DURRADocumentKrita
 
@@ -243,12 +243,12 @@ class DURRABackendExt(object):
         return output
 
     def generateDocumentMetaFiles(self):
-        files = self._generateDocumentFiles(False)
+        files = self._generateDocumentFiles(True)
         output = "generate Files: " + "\n - ".join(str(x) for x in files) + "\n\n"
         return output
 
     def generateDocument(self):
-        files = self._generateDocumentFiles(True)
+        files = self._generateDocumentFiles(False)
         output = "generate Files: " + "\n - ".join(str(x) for x in files) + "\n\n"
         return output
 
@@ -302,11 +302,7 @@ class DURRABackendExt(object):
 
                 msg = ""
 
-                if TESTING:
-                    self.output = self.output + str(self.durradocument)
-                    self.output = self.output + str(self.durradocument.releaseversion) + str(self.durradocument.isnewversion)
-
-                if self.durradocument.releaseversion and self.durradocument.isnewversion:
+                if self.durradocument.releaseversion:
                     if self.durradocument.versionstr == "1.0.0":
                         msg = "finished " + name + " v" + self.durradocument.versionstr + close_issue_msg
                     else:
@@ -360,14 +356,16 @@ class DURRABackendExt(object):
     
     def generateDocumentCurrentVersion(self):
         if self.durradocument.hasKritaDocument():
-            self.revisionVersion()
+            if not self.durradocument.releaseversion:
+                self.revisionVersion()
             return self.generateDocument()
         else:
             return 'document is not set'
 
     def commitDocumentCurrentVersion(self, extramsg=None):
         if self.durradocument.hasKritaDocument():
-            self.revisionVersion()
+            if not self.durradocument.releaseversion:
+                self.revisionVersion()
             return self.commitDocument(extramsg)
         else:
             return 'document is not set'

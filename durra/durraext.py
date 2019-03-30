@@ -47,6 +47,8 @@ class DURRAExtBase(object):
     def __init__(self):
         self.backend = DURRABackendExt()
 
+        self.lastlog = ""
+
         # add more dirs and stuff, setup, ...
         app_data_location = QStandardPaths.AppDataLocation
         pykrita_directory = QStandardPaths.writableLocation(app_data_location)
@@ -75,98 +77,150 @@ class DURRAExtBase(object):
     
     def reload(self):
         self.initDocument()
+        if not self.hasKritaDocument():
+            self.lastlog = "document is not set"
         
+    def updateLog(self):
+        pass
+
     def onBtnSave(self):
-        output = ""
-        if self.backend.durradocument.hasKritaDocument():
+        self.lastlog = ""
+        if self.hasKritaDocument():
             self.disableButtons()
             succ = self.backend.save()
 
             if succ:
-                output = "Document saved"
+                self.lastlog = "Document saved"
             else:
-                output = "Can't save Document"
+                self.lastlog = "Can't save Document"
 
             self.enableButtons()
-        return output
+        return self.lastlog
 
     def onBtnGenFiles(self):
-        output = ""
-        if self.backend.durradocument.hasKritaDocument():
+        self.lastlog = ""
+        if self.hasKritaDocument():
             self.disableButtons()
 
-            output = self.backend.generateDocumentCurrentVersion()
+            self.lastlog = self.backend.generateDocumentCurrentVersion()
             self.reload()
             
             self.enableButtons()
-        return output
+            self.updateLog()
+        return self.lastlog
     
     def onBtnCommitMetaFiles(self, extramsg):
-        output = ""
-        if self.backend.durradocument.hasKritaDocument():
+        if not self.isGitRepo():
+            self.lastlog = "not a git repository (or any of the parent directories)"
+            return self.lastlog
+        
+        self.lastlog = ""
+        if self.hasKritaDocument() and self.isGitRepo():
             self.disableButtons()
 
             self.backend.save()
 
-            output = self.backend.commitDocumentMetafilesCurrentVersion(extramsg)
+            self.lastlog = self.backend.commitDocumentMetafilesCurrentVersion(extramsg)
             self.reload()
             
             self.enableButtons()
-        return output
+            self.updateLog()
+        return self.lastlog
 
 
     def onBtnCommitFiles(self, extramsg):
-        output = ""
-        if self.backend.durradocument.hasKritaDocument():
+        if not self.isGitRepo():
+            self.lastlog = "not a git repository (or any of the parent directories)"
+            self.updateLog()
+            return self.lastlog
+        
+        if self.isReleasedVersion():
+            self.lastlog = "it's released already (version >= 1.0.0)"
+            self.updateLog()
+            return self.lastlog
+        
+        self.lastlog = ""
+        if self.hasKritaDocument() and self.isGitRepo() and not self.isReleasedVersion():
             self.disableButtons()
 
             self.backend.save()
 
-            output = self.backend.commitDocumentCurrentVersion(extramsg)
+            self.lastlog = self.backend.commitDocumentCurrentVersion(extramsg)
             self.reload()
             
             self.enableButtons()
-        return output
+            self.updateLog()
+        return self.lastlog
             
 
     def onBtnNewMajorVersion(self, extramsg):
-        output = ""
-        if self.backend.durradocument.hasKritaDocument():
+        if not self.isGitRepo():
+            self.lastlog = "not a git repository (or any of the parent directories)"
+            self.updateLog()
+            return self.lastlog
+        
+        self.lastlog = ""
+        if self.hasKritaDocument() and self.isGitRepo():
             self.disableButtons()
 
             self.backend.save()
 
-            output = self.backend.commitDocumentNewMajorVersion(extramsg)
+            self.lastlog = self.backend.commitDocumentNewMajorVersion(extramsg)
             self.reload()
             
             self.enableButtons()
-        return output
+            self.updateLog()
+        return self.lastlog
 
     def onBtnNewMinjorVersion(self, extramsg):
-        output = ""
-        if self.backend.durradocument.hasKritaDocument():
+        if not self.isGitRepo():
+            self.lastlog = "not a git repository (or any of the parent directories)"
+            self.updateLog()
+            return self.lastlog
+        
+        if not self.isReleasedVersion():
+            self.lastlog = "not a released version (version < 1.0.0)"
+            self.updateLog()
+            return self.lastlog
+        
+        self.lastlog = ""
+        if self.hasKritaDocument() and self.isGitRepo() and self.isReleasedVersion():
             self.disableButtons()
 
             self.backend.save()
 
-            output = self.backend.commitDocumentNewMinjorVersion(extramsg)
+            self.lastlog = self.backend.commitDocumentNewMinjorVersion(extramsg)
             self.reload()
             
             self.enableButtons()
-        return output
+            self.updateLog()
+        return self.lastlog
 
     def onBtnNewPatchedVersion(self, extramsg):
-        output = ""
-        if self.backend.durradocument.hasKritaDocument():
+        if not self.isGitRepo():
+            self.lastlog = "not a git repository (or any of the parent directories)"
+            self.updateLog()
+            return self.lastlog
+        
+        if not self.isReleasedVersion():
+            self.lastlog = "not a released version (version < 1.0.0)"
+            self.updateLog()
+            return self.lastlog
+        
+        self.lastlog = ""
+        if self.hasKritaDocument() and self.isGitRepo() and self.isReleasedVersion():
             self.disableButtons()
 
             self.backend.save()
 
-            output = self.backend.commitDocumentNewPatchedVersion(extramsg)
+            self.lastlog = self.backend.commitDocumentNewPatchedVersion(extramsg)
             self.reload()
             
             self.enableButtons()
-        return output
+            self.updateLog()
+        return self.lastlog
+
+
 
     def disableButtons(self):
         self.btnGenFiles.setEnabled(False)
@@ -176,6 +230,23 @@ class DURRAExtBase(object):
         self.btnNewMinjorVersion.setEnabled(False)
         self.btnNewPatchedVersion.setEnabled(False)
 
+    def isReleasedVersion(self):
+        if self.backend.durradocument.hasKritaDocument():
+            if self.backend.durradocument.getVERSIONArr():
+                return self.backend.durradocument.getVERSIONArr()[0] >= 1
+        return False
+
+    def isSavedFile(self):
+        if self.backend.durradocument.hasKritaDocument():
+            return self.backend.durradocument.getFilenameKra()
+        return False
+
+    def isGitRepo(self):
+        return self.backend.gitIsRepo(self.backend.workdir)
+
+    def hasKritaDocument(self):
+        return self.backend.durradocument.hasKritaDocument()
+
     def enableButtons(self):
         self.btnGenFiles.setEnabled(True)
         self.btnCommit.setEnabled(True)
@@ -184,29 +255,28 @@ class DURRAExtBase(object):
         self.btnNewMinjorVersion.setEnabled(True)
         self.btnNewPatchedVersion.setEnabled(True)
 
-        if self.backend.durradocument.hasKritaDocument():
-            if self.backend.durradocument.getVERSIONArr():
-                if self.backend.durradocument.getVERSIONArr()[0] >= 1:
-                    self.btnCommit.setEnabled(False)
-                    self.btnCommitMetaFiles.setEnabled(True)
-                    self.btnNewMajorVersion.setEnabled(True)
-                    self.btnNewMinjorVersion.setEnabled(True)
-                    self.btnNewPatchedVersion.setEnabled(True)
-                else:
-                    self.btnCommit.setEnabled(True)
-                    self.btnCommitMetaFiles.setEnabled(True)
-                    self.btnNewMajorVersion.setEnabled(True)
-                    self.btnNewMinjorVersion.setEnabled(False)
-                    self.btnNewPatchedVersion.setEnabled(False)
+        if self.hasKritaDocument():
+            if self.isReleasedVersion():
+                self.btnCommit.setEnabled(False)
+                self.btnCommitMetaFiles.setEnabled(True)
+                self.btnNewMajorVersion.setEnabled(True)
+                self.btnNewMinjorVersion.setEnabled(True)
+                self.btnNewPatchedVersion.setEnabled(True)
+            else:
+                self.btnCommit.setEnabled(True)
+                self.btnCommitMetaFiles.setEnabled(True)
+                self.btnNewMajorVersion.setEnabled(True)
+                self.btnNewMinjorVersion.setEnabled(False)
+                self.btnNewPatchedVersion.setEnabled(False)
             
-            if not self.backend.durradocument.getFilenameKra():
+            if not self.isSavedFile():
                 self.btnCommit.setEnabled(False)
                 self.btnCommitMetaFiles.setEnabled(False)
                 self.btnNewMajorVersion.setEnabled(False)
                 self.btnNewMinjorVersion.setEnabled(False)
                 self.btnNewPatchedVersion.setEnabled(False)
 
-            if not self.backend.gitIsRepo(self.backend.workdir):
+            if not self.isGitRepo():
                 self.btnCommit.setEnabled(False)
                 self.btnCommitMetaFiles.setEnabled(False)
                 self.btnNewMajorVersion.setEnabled(False)
@@ -221,7 +291,8 @@ class DURRAExtBase(object):
             self.btnNewPatchedVersion.setEnabled(False)
 
 
-class DURRAExt(Ui_durraDialog, EXTENSION, DURRAExtBase):
+
+class DURRAExt(EXTENSION, DURRAExtBase, Ui_durraDialog):
 
     def __init__(self, parent):
         super(DURRAExt, self).__init__(parent)
@@ -321,7 +392,7 @@ class DURRAExt(Ui_durraDialog, EXTENSION, DURRAExtBase):
         if self.backend.durradocument.hasKritaDocument():
             extramsg = self.txtMessage.toPlainText()
 
-            output = super.onBtnCommitMetaFiles(extramsg)
+            output = super().onBtnCommitMetaFiles(extramsg)
             
             self.txtLog.setPlainText(output)
             self.txtLog.moveCursor(QtGui.QTextCursor.End)
@@ -332,7 +403,7 @@ class DURRAExt(Ui_durraDialog, EXTENSION, DURRAExtBase):
         if self.backend.durradocument.hasKritaDocument():
             extramsg = self.txtMessage.toPlainText()
 
-            output = super.onBtnCommitFiles(extramsg)
+            output = super().onBtnCommitFiles(extramsg)
             
             self.txtLog.setPlainText(output)
             self.txtLog.moveCursor(QtGui.QTextCursor.End)
@@ -343,7 +414,7 @@ class DURRAExt(Ui_durraDialog, EXTENSION, DURRAExtBase):
         if self.backend.durradocument.hasKritaDocument():
             extramsg = self.txtMessage.toPlainText()
 
-            output = super.onBtnNewMajorVersion(extramsg)
+            output = super().onBtnNewMajorVersion(extramsg)
             
             self.txtLog.setPlainText(output)
             self.txtLog.moveCursor(QtGui.QTextCursor.End)
@@ -354,7 +425,7 @@ class DURRAExt(Ui_durraDialog, EXTENSION, DURRAExtBase):
         if self.backend.durradocument.hasKritaDocument():
             extramsg = self.txtMessage.toPlainText()
 
-            output = super.onBtnNewMinjorVersion(extramsg)
+            output = super().onBtnNewMinjorVersion(extramsg)
             
             self.txtLog.setPlainText(output)
             self.txtLog.moveCursor(QtGui.QTextCursor.End)
@@ -365,7 +436,7 @@ class DURRAExt(Ui_durraDialog, EXTENSION, DURRAExtBase):
         if self.backend.durradocument.hasKritaDocument():
             extramsg = self.txtMessage.toPlainText()
 
-            output = super.onBtnNewPatchedVersion(extramsg)
+            output = super().onBtnNewPatchedVersion(extramsg)
             
             self.txtLog.setPlainText(output)
             self.txtLog.moveCursor(QtGui.QTextCursor.End)

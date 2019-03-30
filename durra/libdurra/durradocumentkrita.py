@@ -78,9 +78,7 @@ class DURRADocumentKrita(DURRADocument):
         files.append(filenamePreview)
 
         if self.releaseversion:
-            newfilename_name = self._filename_name
-            if self.isnewversion is not None:
-                newfilename_name = self._filename_name + '_v' + self.versionstr
+            newfilename_name = self._filename_name + '_v' + self.versionstr
 
             filenameImage = self.exportImage(workdir, newfilename_name)
             files.append(filenameImage)
@@ -107,9 +105,14 @@ class DURRADocumentKrita(DURRADocument):
         self.authoremail = info['authoremail']
         self.revisionstr = info['revisionstr']
 
-        newversionstr = "0." + self.revisionstr + ".0"
-        if self.ver_cmp(newversionstr, self.versionstr) < 0:
-            self.versionstr = newversionstr
+        verarr = self.getVERSIONArr()
+        if verarr and len(verarr) >= 3:
+            if verarr[0] > 0:
+                self.releaseversion = True
+            else:
+                if verarr[1] > int(self.revisionstr):
+                    newversionstr = "0." + self.revisionstr + ".0"
+                    self.versionstr = newversionstr
 
     def getDocumentInfo(self):
         return self.getDocumentInfoFromDocument(self._document)
