@@ -39,7 +39,7 @@ from .ui_main import Ui_durraDialog
 
 
 MAIN_KRITA_ID = "durra"
-MAIN_KRITA_MENU_ENTRY = "Developer Uses Revision contRoll for Art(-Projects)"
+MAIN_KRITA_MENU_ENTRY = "DURRA"
 
 
 class DURRAExtBase(object):

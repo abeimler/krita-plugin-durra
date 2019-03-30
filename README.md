@@ -117,7 +117,7 @@ See [git - Setup Manuelly](#git-setup-manually) for more details.
 
 ## How To Use
 
-Goto **Tools > Scripting > Developer uses git for Art**  
+Goto **Tools > Scripting > Developer Uses Revision contRoll for Art**  
 
 ### Document Info
 
@@ -228,7 +228,9 @@ Those files are just txt-files, so you can easily search for keywords or other p
             - MyArtwork.png
             - MyArtwork_v1.0.1.png
             - TITLE
-            - DESCRIPTION
+            - DESCRIPTION.md
+            - DESCRIPTION.html
+            - DESCRIPTION.bbcode
             - KEYWORD
             - LICENSE
             - README.md
@@ -269,12 +271,101 @@ My Artwork Title
 
 #### DESCRIPTION
 
-Document Info: Description.
+Document Info: Description.  
+The description is saved in different formats (markdown, bbcode and html), it's really annoying if different Sites, uses different formats, so you can't copy&past the description.
 
-**Example:**
+**Example (markdown):**
 
 ```markdown
-Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
+### TestArt
+
+An h1 header
+============
+
+Paragraphs are separated by a blank line.
+
+2nd paragraph. *Italic*, **bold**, and `monospace`. Itemized lists
+look like:
+
+  * this one
+  * that one
+  * the other one
+
+Note that --- not considering the asterisk --- the actual text
+content starts at 4-columns in.
+
+> Block quotes are
+> written like so.
+>
+> They can span multiple paragraphs,
+> if you like.
+
+Use 3 dashes for an em-dash. Use 2 dashes for ranges (ex., "it's all
+in chapters 12--14"). Three dots ... will be converted to an ellipsis.
+Unicode is supported. ☺
+```
+
+**Example (bbcode):**
+
+```bbcode
+[b]TestArt[/b]
+[size=200][b]An h1 header[/b][/size]
+Paragraphs are separated by a blank line.
+
+2nd paragraph. [i]Italic[/i], [b]bold[/b], and monospace. Itemized lists
+look like:
+
+  * this one
+  * that one
+  * the other one
+
+Note that --- not considering the asterisk --- the actual text
+content starts at 4-columns in.
+
+[quote]Block quotes are
+written like so.[/quote]
+>
+[quote]They can span multiple paragraphs,
+if you like.[/quote]
+
+Use 3 dashes for an em-dash. Use 2 dashes for ranges (ex., "it's all
+in chapters 12--14"). Three dots ... will be converted to an ellipsis.
+Unicode is supported. ☺
+```
+
+
+**Example (html):**
+
+```html
+<h3>TestArt</h3>
+
+<h1>An h1 header</h1>
+
+<p>Paragraphs are separated by a blank line.</p>
+
+<p>2nd paragraph. <em>Italic</em>, <strong>bold</strong>, and <code>monospace</code>. Itemized lists
+look like:</p>
+
+<ul>
+<li>this one</li>
+<li>that one</li>
+<li>the other one</li>
+</ul>
+
+<p>Note that --- not considering the asterisk --- the actual text
+content starts at 4-columns in.</p>
+
+<blockquote>
+  <p>Block quotes are
+  written like so.</p>
+  
+  <p>They can span multiple paragraphs,
+  if you like.</p>
+</blockquote>
+
+<p>Use 3 dashes for an em-dash. Use 2 dashes for ranges (ex., "it's all
+in chapters 12--14"). Three dots ... will be converted to an ellipsis.
+Unicode is supported. ☺</p>
 ```
 
 
@@ -285,7 +376,7 @@ Document Info: Keyword.
 **Example:**
 
 ```markdown
-a;b;c;abc;s  p a c e
+art drawing fanart krita
 ```
 
 
@@ -340,16 +431,6 @@ I love Kritas editing time feature :)
  - can't edit Version-Number (directly)
  - editing-cycles/revision counts messed up (?)
  - works only with git
-
-## TODO
-
- * [ ] edit/save DocumentInfo
- * [ ] edit Reversion/Version
- * [ ] preview new Version `0.1.0 -> 1.0.0`, `1.0.0 -> 1.0.1` or `1.0.0 -> 1.1.0`
- * [ ] select to generate files
- * [ ] add other versioning-software (SVN)
- * [x] additional commit message
- * [x] init git/SNV in UI
 
 
 ## Future
