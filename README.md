@@ -1,4 +1,4 @@
-# DURRA - Developer Uses Revision contRoll for Art(-Projects)
+# DURRA - Do (not) Use Revision contRoll for Art(-Projects)
 
 It's a Krita 4.x Python Plugin for revision control your Artwork and a bit more.  
 
@@ -28,7 +28,7 @@ Enable plugin: **Settings > Configure Krita... > Python Plugin Manager > durra**
 
 #### Krita 4.0.0 on Windows
 
-Download the zip file and copy the **durra** folder and the **durra.desktop** file into Krita's *Resource Folder* (Settings > Manage Resources > Open Resource Folder). It's usually a folder somewhere in the hidden AppData folder.
+Download the zip file and copy the **durra** folder and the **durra.desktop** file into Krita's *Python Resource Folder* **/pykrita** (Settings > Manage Resources > Open Resource Folder). It's usually a folder somewhere in the hidden AppData folder. *(eg. C:\Users\MyUsername\AppData\Roaming\krita\pykrita)*
 
 
 Enable the plugin: **Settings > Configure Krita... > Python Plugin Manager > durra**
@@ -64,12 +64,11 @@ I use a bit custom directory structure for my Artwork.
             - <generated files goes here>
 ```
 
-_Why do I have this `work/`-directory? Simple, so I can export different fileformats like .psd, .sai, ... or for multiple version of this work `myartwork_v2.kra`._  
+_Why do I have this `work/`-directory? Simple, so I can export different fileformats like .psd, .sai, ... or for multiple version of this work `myartwork_alt_version.kra`._  
 _I also numbered my directories to keep it in order_
 
-> The importing thing is, your `.kra` file need it's own directory.
-
-> Don't forget to Setup your Author-Settings
+> Importing is, your `.kra` file need its own directory.
+> And Don't forget to Setup your Author-Settings
 
 https://docs.krita.org/Author_Settings
 
@@ -131,19 +130,19 @@ Goto **Tools > Scripting > DURRA**
 You can edit this Document Information in: **File > Document Information**
 ### Use this Buttons
 
-Use these 2 Buttons for the workflow:  
+Use these 2 Buttons for the simple version controll workflow:  
 
 1. If you're in your WIP-Phase, use the **Commit WIP**-Button.  
 
 2. If you're done and want to "publish" your work/commission, use the **New Major Version**-Button.  
-After your first "release" (version `1.0.0`) you can use the other **New ... Version**-Buttons.
+After your first "release" (version `1.0.0`) you can use the other **New ... Version**-Buttons, see [Versioning](#versioning) for more detils. 
 
 
 
 ## Features
 
 ### revision control (git/svn)
-#### Versioning
+#### <a name="versioning"></a> Versioning
 
 The Versioning should be very simple, based on the [Semantic Versioning](https://semver.org/).
 
@@ -472,7 +471,8 @@ a b c d
 ## Future
 
 With this meta-files and export images, you can
-upload your Art to Sites like DeviantaArt and Mastodon via API.
+upload your Art to Sites like DeviantaArt and Mastodon via API, search in the Description and search for tags etc.
+Just human- and maschine-readable stuff.
 
 
 
